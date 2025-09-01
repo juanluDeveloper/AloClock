@@ -12,9 +12,6 @@ Para compilar y ejecutar:
 mvn spring-boot:run
 ```
 
-Configure las credenciales de base de datos copiando `src/main/resources/application.properties.example`
-a `src/main/resources/application.properties` y ajustando las variables según el entorno.
-
 ## Frontend
 - React básico con Axios.
 - Realiza login y permite fichar entrada/salida.
