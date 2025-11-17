@@ -1,51 +1,87 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
+import { setAuthToken } from './services/api';
+import { login as loginService } from './services/authService';
+import LoginView from './views/LoginView';
+import UserDashboard from './views/UserDashboard';
+import AdminView from './views/AdminView';
 
 export default function App() {
-  const [token, setToken] = useState(null);
-  const [records, setRecords] = useState([]);
+  const [token, setTokenState] = useState(null);
+  const [view, setView] = useState('user'); // 'user' | 'admin'
 
-  const login = async (e) => {
-    e.preventDefault();
-    const email = e.target.email.value;
-    const password = e.target.password.value;
-    const res = await axios.post('/api/login', { email, password });
-    setToken(res.data.token);
+  const handleLogin = async (email, password) => {
+    try {
+      const token = await loginService(email, password);
+      setTokenState(token);
+      setAuthToken(token);
+    } catch (err) {
+      console.error(err);
+      alert('Credenciales inválidas o error en el servidor');
+    }
   };
 
-  const punch = async (tipo) => {
-    await axios.post('/api/fichajes', { tipo }, { headers: { Authorization: `Bearer ${token}` } });
-    loadRecords();
+  const handleLogout = () => {
+    setTokenState(null);
+    setAuthToken(null);
   };
-
-  const loadRecords = async () => {
-    const res = await axios.get('/api/fichajes/mis-registros', { headers: { Authorization: `Bearer ${token}` } });
-    setRecords(res.data);
-  };
-
-  useEffect(() => {
-    if (token) loadRecords();
-  }, [token]);
 
   if (!token) {
-    return (
-      <form onSubmit={login}>
-        <input name="email" placeholder="Email" />
-        <input name="password" type="password" placeholder="Password" />
-        <button type="submit">Login</button>
-      </form>
-    );
+    return <LoginView onLogin={handleLogin} />;
   }
 
   return (
-    <div>
-      <button onClick={() => punch('ENTRADA')}>Entrada</button>
-      <button onClick={() => punch('SALIDA')}>Salida</button>
-      <ul>
-        {records.map(r => (
-          <li key={r.id}>{r.tipo} - {r.fecha} {r.horaEntrada || r.horaSalida}</li>
-        ))}
-      </ul>
-    </div>
+    <>
+      <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div className="container">
+          <span className="navbar-brand d-flex align-items-center">
+            <img
+              src="/images/alodent-logo.png"
+              alt="Alodent"
+              style={{ height: '34px' }}
+              className="me-2"
+              onError={(e) => (e.currentTarget.style.display = 'none')}
+            />
+            <span>
+              <strong>AloClock</strong>{' '}
+              <small className="text-muted d-none d-sm-inline">
+                · Control de jornada
+              </small>
+            </span>
+          </span>
+
+          <div className="ms-auto d-flex align-items-center gap-2">
+            <div className="btn-group me-2">
+              <button
+                className={
+                  'btn btn-sm btn-outline-primary' +
+                  (view === 'user' ? ' active' : '')
+                }
+                onClick={() => setView('user')}
+              >
+                Trabajador
+              </button>
+              <button
+                className={
+                  'btn btn-sm btn-outline-primary' +
+                  (view === 'admin' ? ' active' : '')
+                }
+                onClick={() => setView('admin')}
+              >
+                Admin
+              </button>
+            </div>
+            <button
+              className="btn btn-sm btn-outline-secondary btn-pill"
+              onClick={handleLogout}
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {view === 'user' && <UserDashboard />}
+      {view === 'admin' && <AdminView />}
+    </>
   );
 }

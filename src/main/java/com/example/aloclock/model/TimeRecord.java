@@ -1,8 +1,17 @@
 package com.example.aloclock.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import com.example.aloclock.model.enums.RecordType;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 public class TimeRecord {
@@ -14,14 +23,12 @@ public class TimeRecord {
     @ManyToOne(optional = false)
     private Employee empleado;
 
-    private LocalDate fecha;
+    private LocalDate fecha;              // Día del evento
 
-    private LocalDateTime horaEntrada;
-
-    private LocalDateTime horaSalida;
+    private LocalDateTime instante;       // Momento exacto del evento
 
     @Enumerated(EnumType.STRING)
-    private RecordType tipo;
+    private RecordType tipo;              // ENTRADA, SALIDA, PAUSA, REANUDACION
 
     private LocalDateTime creadoEn;
 
@@ -31,12 +38,16 @@ public class TimeRecord {
 
     public TimeRecord() {}
 
-    public TimeRecord(Employee empleado, LocalDate fecha, LocalDateTime horaEntrada, LocalDateTime horaSalida,
-                      RecordType tipo, LocalDateTime creadoEn, String ipOrigen, String userAgent) {
+    public TimeRecord(Employee empleado,
+                      LocalDate fecha,
+                      LocalDateTime instante,
+                      RecordType tipo,
+                      LocalDateTime creadoEn,
+                      String ipOrigen,
+                      String userAgent) {
         this.empleado = empleado;
         this.fecha = fecha;
-        this.horaEntrada = horaEntrada;
-        this.horaSalida = horaSalida;
+        this.instante = instante;
         this.tipo = tipo;
         this.creadoEn = creadoEn;
         this.ipOrigen = ipOrigen;
@@ -63,20 +74,12 @@ public class TimeRecord {
         this.fecha = fecha;
     }
 
-    public LocalDateTime getHoraEntrada() {
-        return horaEntrada;
+    public LocalDateTime getInstante() {
+        return instante;
     }
 
-    public void setHoraEntrada(LocalDateTime horaEntrada) {
-        this.horaEntrada = horaEntrada;
-    }
-
-    public LocalDateTime getHoraSalida() {
-        return horaSalida;
-    }
-
-    public void setHoraSalida(LocalDateTime horaSalida) {
-        this.horaSalida = horaSalida;
+    public void setInstante(LocalDateTime instante) {
+        this.instante = instante;
     }
 
     public RecordType getTipo() {

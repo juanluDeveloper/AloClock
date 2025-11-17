@@ -1,22 +1,30 @@
 package com.example.aloclock.controller;
 
-import com.example.aloclock.model.Employee;
-import com.example.aloclock.model.TimeRecord;
-import com.example.aloclock.model.Role;
-import com.example.aloclock.service.EmployeeService;
-import com.example.aloclock.service.TimeRecordService;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.aloclock.model.Employee;
+import com.example.aloclock.model.TimeRecord;
+import com.example.aloclock.model.enums.Role;
+import com.example.aloclock.service.EmployeeService;
+import com.example.aloclock.service.TimeRecordService;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -38,7 +46,10 @@ public class AdminController {
         LocalDate s = start == null ? LocalDate.MIN : start;
         LocalDate e = end == null ? LocalDate.MAX : end;
         if (empleadoId != null) {
-            Employee emp = employeeService.findAll().stream().filter(x -> x.getId().equals(empleadoId)).findFirst().orElseThrow();
+            Employee emp = employeeService.findAll().stream()
+                    .filter(x -> x.getId().equals(empleadoId))
+                    .findFirst()
+                    .orElseThrow();
             return timeRecordService.findByEmployeeAndDateRange(emp, s, e);
         }
         return employeeService.findAll().stream()
@@ -50,14 +61,19 @@ public class AdminController {
     public ResponseEntity<byte[]> export(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
                                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         List<TimeRecord> records = getRecords(null, start, end);
-        String csv = records.stream()
+
+        String header = "Empleado,Fecha,Instante,Tipo\n";
+
+        String body = records.stream()
                 .map(r -> String.join(",",
                         r.getEmpleado().getNombre(),
                         r.getFecha().toString(),
-                        r.getHoraEntrada() != null ? r.getHoraEntrada().toString() : "",
-                        r.getHoraSalida() != null ? r.getHoraSalida().toString() : "",
+                        r.getInstante().toString(),
                         r.getTipo().name()))
                 .collect(Collectors.joining("\n"));
+
+        String csv = header + body;
+
         byte[] bytes = csv.getBytes(StandardCharsets.UTF_8);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=export.csv")
@@ -65,15 +81,27 @@ public class AdminController {
                 .body(bytes);
     }
 
+    @GetMapping("/empleados")
+    public List<Employee> listEmployees() {
+        return employeeService.findAll();
+    }
+
     @PostMapping("/empleados")
     public Employee createEmployee(@RequestBody Map<String, String> body) {
-        return employeeService.createEmployee(body.get("nombre"), body.get("email"), body.get("password"),
-                Role.valueOf(body.getOrDefault("rol", "USER")));
+        return employeeService.createEmployee(
+                body.get("nombre"),
+                body.get("email"),
+                body.get("password"),
+                Role.valueOf(body.getOrDefault("rol", "USER"))
+        );
     }
 
     @PutMapping("/empleados/{id}")
     public Employee updateEmployee(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        Employee emp = employeeService.findAll().stream().filter(e -> e.getId().equals(id)).findFirst().orElseThrow();
+        Employee emp = employeeService.findAll().stream()
+                .filter(e -> e.getId().equals(id))
+                .findFirst()
+                .orElseThrow();
         if (body.containsKey("nombre")) emp.setNombre((String) body.get("nombre"));
         if (body.containsKey("activo")) emp.setActivo((Boolean) body.get("activo"));
         return employeeService.save(emp);

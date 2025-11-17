@@ -1,7 +1,7 @@
 package com.example.aloclock.service;
 
 import com.example.aloclock.model.Employee;
-import com.example.aloclock.model.Role;
+import com.example.aloclock.model.enums.Role;
 import com.example.aloclock.repository.EmployeeRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
