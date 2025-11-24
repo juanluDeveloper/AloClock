@@ -6,6 +6,11 @@ import {
   getAdminFichajes,
   exportCsv,
 } from '../services/adminService';
+import {
+  listarIncidencias,
+  aprobarIncidencia,
+  rechazarIncidencia,
+} from '../services/incidenciaService';
 
 export default function AdminView() {
   const [employees, setEmployees] = useState([]);
@@ -20,6 +25,11 @@ export default function AdminView() {
     rol: 'USER',
   });
   const [error, setError] = useState(null);
+
+  // incidencias
+  const [incidencias, setIncidencias] = useState([]);
+  const [estadoFiltro, setEstadoFiltro] = useState('PENDIENTE');
+  const [loadingIncidencias, setLoadingIncidencias] = useState(false);
 
   const formatDate = (isoDateStr) => {
     if (!isoDateStr) return '';
@@ -63,9 +73,28 @@ export default function AdminView() {
     }
   };
 
+  const loadIncidencias = async () => {
+    try {
+      setLoadingIncidencias(true);
+      const estado =
+        estadoFiltro === 'TODAS' || estadoFiltro === '' ? null : estadoFiltro;
+      const data = await listarIncidencias(estado);
+      setIncidencias(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingIncidencias(false);
+    }
+  };
+
   useEffect(() => {
     loadEmployees();
+    loadIncidencias();
   }, []);
+
+  useEffect(() => {
+    loadIncidencias();
+  }, [estadoFiltro]);
 
   const handleCreateEmployee = async (e) => {
     e.preventDefault();
@@ -111,6 +140,29 @@ export default function AdminView() {
     }
   };
 
+  const handleAprobarIncidencia = async (id) => {
+    if (!window.confirm('¿Aprobar esta incidencia?')) return;
+    try {
+      await aprobarIncidencia(id);
+      await loadIncidencias();
+    } catch (err) {
+      console.error(err);
+      alert('Error al aprobar la incidencia');
+    }
+  };
+
+  const handleRechazarIncidencia = async (id) => {
+    const comentario = window.prompt('Motivo del rechazo:');
+    if (comentario === null) return;
+    try {
+      await rechazarIncidencia(id, comentario);
+      await loadIncidencias();
+    } catch (err) {
+      console.error(err);
+      alert('Error al rechazar la incidencia');
+    }
+  };
+
   if (error) {
     return (
       <div className="container my-4">
@@ -124,7 +176,7 @@ export default function AdminView() {
       <div className="mb-3">
         <h2 className="mb-0">Panel administrador</h2>
         <small className="text-muted">
-          Gestión de empleados y consulta de fichajes
+          Gestión de empleados, fichajes e incidencias
         </small>
       </div>
 
@@ -243,7 +295,7 @@ export default function AdminView() {
           </div>
         </div>
 
-        {/* Fichajes */}
+        {/* Fichajes + Incidencias */}
         <div className="col-12 col-lg-7">
           <div className="card card-soft mb-3">
             <div className="card-body">
@@ -318,7 +370,9 @@ export default function AdminView() {
                   </thead>
                   <tbody>
                     {[...records]
-                      .sort((a, b) => new Date(b.instante) - new Date(a.instante)) // del más nuevo al más antiguo
+                      .sort(
+                        (a, b) => new Date(b.instante) - new Date(a.instante)
+                      )
                       .map((r) => (
                         <tr key={r.id}>
                           <td>{r.empleado?.nombre || '—'}</td>
@@ -326,7 +380,9 @@ export default function AdminView() {
                           <td>{formatTime(r.instante)}</td>
                           <td>{r.tipo}</td>
                           <td>
-                            <small className="text-muted">{r.ipOrigen || '—'}</small>
+                            <small className="text-muted">
+                              {r.ipOrigen || '—'}
+                            </small>
                           </td>
                         </tr>
                       ))}
@@ -343,7 +399,120 @@ export default function AdminView() {
             </div>
           </div>
 
-          {/* Aquí podrías meter en el futuro gráficas, etc. */}
+          {/* Incidencias */}
+          <div className="card card-soft">
+            <div className="card-body">
+              <div className="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                <h5 className="card-title mb-0">Incidencias</h5>
+                <div className="d-flex align-items-center gap-2">
+                  <label className="form-label mb-0 me-1">Estado</label>
+                  <select
+                    className="form-select form-select-sm"
+                    value={estadoFiltro}
+                    onChange={(e) => setEstadoFiltro(e.target.value)}
+                  >
+                    <option value="PENDIENTE">Pendientes</option>
+                    <option value="APROBADA">Aprobadas</option>
+                    <option value="RECHAZADA">Rechazadas</option>
+                    <option value="TODAS">Todas</option>
+                  </select>
+                </div>
+              </div>
+
+              {loadingIncidencias ? (
+                <p className="text-muted mb-0">Cargando incidencias...</p>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table table-sm align-middle">
+                    <thead className="table-light">
+                      <tr>
+                        <th>ID</th>
+                        <th>Empleado</th>
+                        <th>Tipo</th>
+                        <th>Detalle</th>
+                        <th>Comentario usuario</th>
+                        <th>Estado</th>
+                        <th>Resuelto por</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {incidencias.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan={8}
+                            className="text-center text-muted"
+                          >
+                            No hay incidencias para este filtro.
+                          </td>
+                        </tr>
+                      )}
+                      {incidencias.map((inc) => (
+                        <tr key={inc.id}>
+                          <td>{inc.id}</td>
+                          <td>{inc.empleadoEmail || '—'}</td>
+                          <td>{inc.tipo}</td>
+                          <td style={{ fontSize: '0.85rem' }}>
+                            {inc.tipo === 'ADD' && (
+                              <>
+                                Añadir <strong>{inc.recordType}</strong> el{' '}
+                                {inc.fechaObjetivo || '-'}{' '}
+                                {inc.instanteObjetivo &&
+                                  formatTime(inc.instanteObjetivo)}
+                              </>
+                            )}
+                            {inc.tipo === 'DELETE' && (
+                              <>
+                                Eliminar fichaje ID{' '}
+                                <strong>#{inc.timeRecordIdAfectado}</strong>
+                              </>
+                            )}
+                          </td>
+                          <td style={{ fontSize: '0.8rem' }}>
+                            {inc.comentarioUsuario || (
+                              <span className="text-muted">—</span>
+                            )}
+                          </td>
+                          <td>{inc.estado}</td>
+                          <td>{inc.resueltoPor || '—'}</td>
+                          <td>
+                            {inc.estado === 'PENDIENTE' && (
+                              <div className="d-flex flex-column flex-sm-row gap-1">
+                                <button
+                                  className="btn btn-success btn-sm btn-pill"
+                                  onClick={() =>
+                                    handleAprobarIncidencia(inc.id)
+                                  }
+                                >
+                                  Aprobar
+                                </button>
+                                <button
+                                  className="btn btn-outline-danger btn-sm btn-pill"
+                                  onClick={() =>
+                                    handleRechazarIncidencia(inc.id)
+                                  }
+                                >
+                                  Rechazar
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <p
+                className="text-muted mb-0 mt-2"
+                style={{ fontSize: '0.8rem' }}
+              >
+                Las incidencias aprobadas generarán o eliminarán fichajes en la
+                tabla superior.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

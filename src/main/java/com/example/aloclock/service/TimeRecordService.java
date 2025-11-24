@@ -70,15 +70,16 @@ public class TimeRecordService {
                 ip,
                 userAgent
         );
+        record.setEliminado(false);
         return repository.save(record);
     }
 
     public List<TimeRecord> findByEmployee(Employee empleado) {
-        return repository.findByEmpleado(empleado);
+        return repository.findByEmpleadoAndEliminadoFalseOrderByInstanteAsc(empleado);
     }
 
     public List<TimeRecord> findByEmployeeAndDateRange(Employee empleado, LocalDate start, LocalDate end) {
-        return repository.findByEmpleadoAndFechaBetween(empleado, start, end);
+        return repository.findByEmpleadoAndFechaBetweenAndEliminadoFalseOrderByInstanteAsc(empleado, start, end);
     }
 
 
@@ -156,4 +157,14 @@ public class TimeRecordService {
         // podríamos sumar hasta ahora si es hoy; de momento no lo hacemos.
         return totalMinutos;
     }
+
+    // método útil para incidencias
+    public TimeRecord findById(Long id) {
+        return repository.findById(id).orElseThrow();
+    }
+
+    public TimeRecord save(TimeRecord record) {
+        return repository.save(record);
+    }
+
 }

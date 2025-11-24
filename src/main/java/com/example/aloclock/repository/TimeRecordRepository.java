@@ -16,4 +16,21 @@ public interface TimeRecordRepository extends JpaRepository<TimeRecord, Long> {
     List<TimeRecord> findByEmpleadoAndFechaBetween(Employee empleado, LocalDate start, LocalDate end);
 
     Optional<TimeRecord> findTopByEmpleadoOrderByInstanteDesc(Employee empleado);
+
+    // Para el usuario (solo registros activos)
+    List<TimeRecord> findByEmpleadoAndEliminadoFalse(Employee empleado);
+
+    List<TimeRecord> findByEmpleadoAndFechaBetweenAndEliminadoFalse(
+            Employee empleado,
+            LocalDate start,
+            LocalDate end
+    );
+
+    List<TimeRecord> findByEmpleadoAndEliminadoFalseOrderByInstanteAsc(Employee empleado);
+
+    List<TimeRecord> findByEmpleadoAndFechaBetweenAndEliminadoFalseOrderByInstanteAsc(
+            Employee empleado,
+            LocalDate start,
+            LocalDate end
+    );
 }

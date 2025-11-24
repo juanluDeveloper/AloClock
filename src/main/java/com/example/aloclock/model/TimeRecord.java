@@ -20,39 +20,71 @@ public class TimeRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     private Employee empleado;
 
-    private LocalDate fecha;              // Día del evento
+    private LocalDate fecha;
 
-    private LocalDateTime instante;       // Momento exacto del evento
+    private LocalDateTime instante;
 
     @Enumerated(EnumType.STRING)
-    private RecordType tipo;              // ENTRADA, SALIDA, PAUSA, REANUDACION
+    private RecordType tipo;
 
-    private LocalDateTime creadoEn;
+    private LocalDateTime createdAt;
 
-    private String ipOrigen;
+    private String ip;
 
     private String userAgent;
 
-    public TimeRecord() {}
+    private boolean eliminado = false;
 
+    // nuevos campos para trazabilidad / borrado lógico
+    private LocalDateTime eliminadoEn;
+
+    private String eliminadoPor;
+
+    private Long incidenciaId;
+
+    // Constructor completo original
     public TimeRecord(Employee empleado,
                       LocalDate fecha,
                       LocalDateTime instante,
                       RecordType tipo,
-                      LocalDateTime creadoEn,
-                      String ipOrigen,
+                      LocalDateTime createdAt,
+                      String ip,
                       String userAgent) {
+
         this.empleado = empleado;
         this.fecha = fecha;
         this.instante = instante;
         this.tipo = tipo;
-        this.creadoEn = creadoEn;
-        this.ipOrigen = ipOrigen;
+        this.createdAt = createdAt;
+        this.ip = ip;
         this.userAgent = userAgent;
+        this.eliminado = false;
     }
+
+    // Segundo constructor simplificado (el que usas en IncidenciaService)
+    public TimeRecord(Employee empleado,
+                      LocalDateTime instante,
+                      RecordType tipo,
+                      String ip,
+                      String userAgent) {
+
+        this.empleado = empleado;
+        this.fecha = instante != null ? instante.toLocalDate() : null;
+        this.instante = instante;
+        this.tipo = tipo;
+        this.createdAt = LocalDateTime.now();
+        this.ip = ip;
+        this.userAgent = userAgent;
+        this.eliminado = false;
+    }
+
+    // Constructor vacío requerido por JPA
+    public TimeRecord() {}
+
+    // Getters y Setters
 
     public Long getId() {
         return id;
@@ -90,20 +122,20 @@ public class TimeRecord {
         this.tipo = tipo;
     }
 
-    public LocalDateTime getCreadoEn() {
-        return creadoEn;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreadoEn(LocalDateTime creadoEn) {
-        this.creadoEn = creadoEn;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public String getIpOrigen() {
-        return ipOrigen;
+    public String getIp() {
+        return ip;
     }
 
-    public void setIpOrigen(String ipOrigen) {
-        this.ipOrigen = ipOrigen;
+    public void setIp(String ip) {
+        this.ip = ip;
     }
 
     public String getUserAgent() {
@@ -112,5 +144,37 @@ public class TimeRecord {
 
     public void setUserAgent(String userAgent) {
         this.userAgent = userAgent;
+    }
+
+    public boolean isEliminado() {
+        return eliminado;
+    }
+
+    public void setEliminado(boolean eliminado) {
+        this.eliminado = eliminado;
+    }
+
+    public LocalDateTime getEliminadoEn() {
+        return eliminadoEn;
+    }
+
+    public void setEliminadoEn(LocalDateTime eliminadoEn) {
+        this.eliminadoEn = eliminadoEn;
+    }
+
+    public String getEliminadoPor() {
+        return eliminadoPor;
+    }
+
+    public void setEliminadoPor(String eliminadoPor) {
+        this.eliminadoPor = eliminadoPor;
+    }
+
+    public Long getIncidenciaId() {
+        return incidenciaId;
+    }
+
+    public void setIncidenciaId(Long incidenciaId) {
+        this.incidenciaId = incidenciaId;
     }
 }
