@@ -450,7 +450,7 @@ export default function AdminView() {
                       {incidencias.map((inc) => (
                         <tr key={inc.id}>
                           <td>{inc.id}</td>
-                          <td>{inc.empleadoEmail || '—'}</td>
+                          <td>{inc.empleado?.nombre || '—'}</td>
                           <td>{inc.tipo}</td>
                           <td style={{ fontSize: '0.85rem' }}>
                             {inc.tipo === 'ADD' && (
